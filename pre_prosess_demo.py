@@ -107,7 +107,7 @@ def joints3d2csv(joints, img_path):
     ## save joint3d as csv
     import csv
     pp = '' + img_path
-    pp = pp.replace('/tmp', '/hmr')
+    pp = pp.replace('/frames', '/basic')
     pp = pp.replace('.png', '_hmr.csv')
 
     with open(pp, 'w') as f:
@@ -181,12 +181,12 @@ def main(img_path, json_path=None):
 
     # Add batch dimension: 1 x D x D x 3
 
-    dir = Path("/home/dev/openpose_output/tmp")
+    dir = Path("/home/dev/openpose_output/frames")
     img_pathes = sorted(dir.iterdir())    
     for i in img_pathes:
         img_path = i
         json_path = str(i).replace(".png", "_keypoints.json")
-        json_path = str(json_path).replace("tmp/", "")
+        json_path = str(json_path).replace("frames/", "keypoints/")
         
         input_img, proc_param, img = preprocess_image(img_path, json_path)
         input_img = np.expand_dims(input_img, 0)
@@ -260,5 +260,5 @@ if __name__ == '__main__':
 
     renderer = vis_util.SMPLRenderer(face_path=config.smpl_face_path)
 
-    #main(config.img_path, config.json_path)
-    main_cam(config.img_path, config.json_path)
+    main(config.img_path, config.json_path)
+    #main_cam(config.img_path, config.json_path)
