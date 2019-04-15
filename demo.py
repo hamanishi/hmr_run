@@ -203,6 +203,90 @@ def main(img_path, json_path=None):
     
         #visualize(img, proc_param, joints[0], verts[0], cams[0], img_path)
 
+
+def render_2djoint(img, joints):
+    #print(joints)
+    for j in joints[0]:
+        #print(j[0])
+        cv2.circle(img, (j[0],j[1]), 5, (255, 0, 0), -1)
+
+    cv2.imshow('2djoints', img)
+
+def render_skinMesh(img, verts):
+    #print(verts)
+    height = img.shape[0]
+    width = img.shape[1]
+    #    print(height, width)    
+    scale = 100
+    odd = 0
+    dense = 3
+
+    cam_for_render, vert_shifted, joints_orig = vis_util.get_original(
+        proc_param, verts, cam, joints, img_size=img.shape[:2])
+    
+    for v in verts[0]:
+        #print(i,verts[0][i])
+        #print(v)
+        if odd == 0:
+            #cv2.circle(img, (int(width/2) + int(verts[0][i][0]*scale), int(height/2) + int(verts[0][i][1]*scale)), 2, (0, 255, 0), -1)
+            cv2.circle(img, (int(width/2) + int(v[0]*scale), int(height/2) + int(v[1]*scale)), 1, (0, 255, 0), -1)
+
+        odd = int((odd + 1)%dense)
+
+    cv2.imshow('verts', img)
+
+def render_skinMesh_overlay(img, verts, proc_param, cam, joints):
+    height = img.shape[0]
+    width = img.shape[1]
+
+    scale = 100
+    odd = 0
+    dense = 3
+
+    cam_for_render, vert_shifted, joints_orig = vis_util.get_original(
+        proc_param, verts[0], cam[0], joints[0], img_size=img.shape[:2])
+    
+    for v in vert_shifted:
+        #print(v)
+        if odd == 0:
+            cv2.circle(img, (int(width/2) + int(v[0]*scale), int(height/2) + int(v[1]*scale)), 1, (0, 255, 0), -1)
+        odd = int((odd + 1)%dense)
+
+    cv2.imshow('verts_overlay', img)
+    
+def render_skinMesh3D(img, verts):
+    height = img.shape[0]
+    width = img.shape[1]
+    #    print(height, width)    
+    scale = 100
+    odd = 0
+    dense = 3
+
+    x = []
+    y = []
+    z = []
+    for v in verts[0]:
+        if odd == 0:
+            #cv2.circle(img, (int(width/2) + int(v[0]*scale), int(height/2) + int(v[1]*scale)), 1, (0, 255, 0), -1)
+            x.append(v[0]*scale)
+            y.append(v[1]*scale)
+            z.append(v[2]*scale)
+
+        odd = int((odd + 1)%dense)
+
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import axes3d
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    scatter = ax.scatter3D(x,y,z,
+                           s=3,
+                           c=z,
+                           cmap=plt.cm.viridis)
+    plt.colorbar(scatter)
+    plt.show()
+
+
+    
 def main_cam(img_path, json_path=None):
     vc = cv2.VideoCapture(0)
     if vc.isOpened():
@@ -224,7 +308,9 @@ def main_cam(img_path, json_path=None):
         a = time.time() - start
         #print(a)
         input_img, proc_param, img = preprocess_image_cam(img_path, json_path, img)
+        crop_img = input_img
         input_img = np.expand_dims(input_img, 0)
+
 
         joints, verts, cams, joints3d, theta = model.predict(input_img, get_theta=True)
         #b = time.time() - start
@@ -235,6 +321,13 @@ def main_cam(img_path, json_path=None):
             liblo.send(target, "/xyz", float(j[0]), float(j[1]), float(j[2]), str(cnt), idx)
             idx += 1
 
+
+        #render_2djoint(crop_img, joints)
+        #render_skinMesh(crop_img, verts)
+        render_skinMesh_overlay(crop_img, verts, proc_param, cams, joints)
+        #render_skinMesh3D(crop_img, verts)
+        
+            
         k = cv2.waitKey(30) & 0xff
         if k == 27:
             break
@@ -245,7 +338,8 @@ def main_cam(img_path, json_path=None):
     cv2.destroyAllWindows()
             
 
-IP = '192.170.11.6'
+#IP = '192.170.11.6'
+IP = '192.168.100.6'
 PORT = 12345
 target = liblo.Address(IP, PORT)
 
